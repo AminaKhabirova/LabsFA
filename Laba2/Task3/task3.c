@@ -40,14 +40,14 @@ void find_substring_in_files(const char *substring, size_t number_of_files, ...)
 		const char *filename = va_arg(args, const char*);
 		FILE *file = fopen(filename, "r");
 		if (file == NULL) {
-			printf("Error opening file");
+			printf("Error opening file\n");
 			continue;
 		}
 
 		// создание буфера
 		char *buffer = malloc((substring_len + 1) * sizeof(char));
 		if (buffer == NULL) {
-			printf("Error allocating memory");
+			printf("Error allocating memory\n");
 			fclose(file);
 			continue;
 		}
@@ -65,7 +65,7 @@ void find_substring_in_files(const char *substring, size_t number_of_files, ...)
 		// создание массива с количеством символов в строках
 		size_t *lengths = (size_t*)malloc(line_count * sizeof(size_t));
 		if (lengths == NULL) {
-			printf("Error allocating memory");
+			printf("Error allocating memory\n");
 			fclose(file);
 			continue;
 		}
