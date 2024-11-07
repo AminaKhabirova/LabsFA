@@ -7,5 +7,12 @@ add_executable(Laba2Task3 Laba2/Task3/task3.c)
 add_executable(Laba2Task7 Laba2/Task7/task7.c)
 add_executable(Laba2Task8 Laba2/Task8/task8.c)
 add_executable(Laba3Task1 Laba3/Task1/task1.c)
+add_executable(Laba3Task3 Laba3/Task3/task3.c)
+add_executable(Laba3Task4 Laba3/Task4/string.h
+        Laba3/Task4/string.c
+        Laba3/Task4/task4.h
+        Laba3/Task4/task4.c
+        Laba3/Task4/array.h
+        Laba3/Task4/array.c)
 target_link_libraries(Laba2Task7 m)
 target_link_libraries(Laba2Task2 m)
