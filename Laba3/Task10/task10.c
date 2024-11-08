@@ -35,6 +35,7 @@ void ParseExpression(FILE *input, FILE *output, int level) {
     	if (ch == '\r') continue;
     	if (ch == '\n') {
     		fprintf(output, "\n\n");
+    		in_expression = 0;
     	} else if (ch == '(') {
             if (in_expression) {
                 fprintf(output, "\n");
