@@ -29,11 +29,13 @@ void PrintIndent(FILE *output, int level) {
 
 void ParseExpression(FILE *input, FILE *output, int level) {
     int in_expression = 0;
+	int after_bracket = 0;
     int ch;
 
     while ((ch = fgetc(input)) != EOF) {
     	if (ch == '\r') continue;
     	if (ch == '\n') {
+    		after_bracket = 0;
     		fprintf(output, "\n\n");
     		in_expression = 0;
     	} else if (ch == '(') {
@@ -43,10 +45,12 @@ void ParseExpression(FILE *input, FILE *output, int level) {
             in_expression = 1;
             level++;
             ParseExpression(input, output, level);
+    		after_bracket = 1;
         	level--;
         } else if (ch == ')') {
             return;
         } else if (ch == ',') {
+        	after_bracket = 0;
             fprintf(output, "\n");
             PrintIndent(output, level);
         } else if (ch != ' ') {
@@ -54,6 +58,10 @@ void ParseExpression(FILE *input, FILE *output, int level) {
                 PrintIndent(output, level);
                 in_expression = 1;
             }
+        	if (after_bracket) {
+        		fprintf(output, "\n");
+        		PrintIndent(output, level);
+        	}
             fprintf(output, "%c", ch);
         }
     }
