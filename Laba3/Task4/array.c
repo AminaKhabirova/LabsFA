@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "array.h""
 
 int CreateArray(Array* arr, unsigned int length) {

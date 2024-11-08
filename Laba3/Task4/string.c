@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "string.h"
 
 int MyStrlen(const char* str) {
@@ -125,16 +124,16 @@ int CopyStringToNew(String *dest, const String *src) {
 	return 0;
 }
 
-void StringСoncatenation(String* str1, const String* str2) {
+int StringСoncatenation(String* str1, const String* str2) {
 	if (str1 == NULL || str2 == NULL) {
-		return;
+		return 1;
 	}
 
 	int new_length = str1->length + str2->length;
 
 	char* new_str = (char*)malloc((new_length + 1) * sizeof(char));
 	if (new_str == NULL) {
-		return;
+		return 1;
 	}
 
 	MyStrcpy(new_str, str1->data);
@@ -145,5 +144,6 @@ void StringСoncatenation(String* str1, const String* str2) {
 
 	str1->data = new_str;
 	str1->length = new_length;
+	return 0;
 }
 

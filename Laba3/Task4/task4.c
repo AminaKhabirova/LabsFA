@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <time.h>
 #include "task4.h"
 
 int GetInfo(Array *result) {
@@ -10,6 +6,10 @@ int GetInfo(Array *result) {
 	if (AddToArray(result, (char)ch)) return 1;
 	ch = getchar();
 	while (ch != '\n') {
+		if (ch == '\r') {
+			ch = getchar();
+			continue;
+		}
 		if (AddToArray(result, (char)ch)) return 1;
 		ch = getchar();
 	}
@@ -275,6 +275,7 @@ int SearchForMailsInTime(Post *post, Mail *found, int *index) {
 }
 
 int SearchForMailsExpired(Post *post, Mail *found, int *index) {
+	if (found == NULL) return 1;
 	time_t cur_time;
 	time(&cur_time);
 	struct tm *time_info = localtime(&cur_time);
@@ -297,15 +298,15 @@ int SearchForMailsExpired(Post *post, Mail *found, int *index) {
 	return 0;
 }
 
-void print_mail(Mail mail) {
-	printf("Mail:\n\tWeight: %f\n\tID: %s\n\tCreation date: %s\n\tDelivery date: %s\n\t", mail.weight,
-		mail.identifier.data, mail.creation_time.data, mail.delivery_time.data);
-	printf("Address:\n\tPost Index: %s\n\tCity: %s\n\tStreet: %s\n\tBuilding: %s\n\tHouse: %u\n\tApartment: %u\n",
-		mail.address.index.data, mail.address.city.data, mail.address.street.data, mail.address.building.data,
-		mail.address.house, mail.address.apartment);
+void PrintMail(Mail mail) {
+	printf("Mail:\n\tAddress:\n\t\tCity: %s\n\t\tStreet: %s\n\t\tHouse: %u\n\t\tBuilding: %s\n\t\t"
+		"Apartment: %u\n\t\tIndex: %s\n\tWeight: %f\n\tID: %s\n\tCreation time: %s\n\tDelivery time: %s\n\n",
+	mail.address.city.data, mail.address.street.data,
+	mail.address.house, mail.address.building.data, mail.address.apartment, mail.address.index.data, mail.weight,
+	mail.identifier.data, mail.creation_time.data, mail.delivery_time.data);
 }
 
-int compare_mails(const void *a, const void *b) {
+int CompareMailsByIdentifier(const void *a, const void *b) {
 	Mail *mail1 = (Mail *) a;
 	Mail *mail2 = (Mail *) b;
 
@@ -373,7 +374,7 @@ int GetInfoAddress(Array *city, Array *street, Array *building, Array *index, in
 	}
 
 	int ch;
-	printf("House number: ");
+	printf("House: ");
 	while (*house == 0) {
 		while ((ch = getchar()) <= ' ') {}
 		ungetc(ch, stdin);
@@ -384,7 +385,7 @@ int GetInfoAddress(Array *city, Array *street, Array *building, Array *index, in
 			continue;
 		}
 		while ((ch = getchar()) != '\n' && ch != EOF) {
-			if (ch != ' ' && ch != '\t') {
+			if (ch != ' ' && ch != '\t' && ch != '\r') {
 				printf("Incorrect house number\nEnter correct house number: ");
 				*house = 0;
 				while ((ch = getchar()) != '\n' && ch != EOF) {}
@@ -402,7 +403,7 @@ int GetInfoAddress(Array *city, Array *street, Array *building, Array *index, in
 		return 1;
 	}
 
-	printf("Apartment number: ");
+	printf("Apartment: ");
 	while (*apartment == 0) {
 		while ((ch = getchar()) <= ' ') {}
 		ungetc(ch, stdin);
@@ -413,7 +414,7 @@ int GetInfoAddress(Array *city, Array *street, Array *building, Array *index, in
 			continue;
 		}
 		while ((ch = getchar()) != '\n' && ch != EOF) {
-			if (ch != ' ' && ch != '\t') {
+			if (ch != ' ' && ch != '\t' && ch != '\r') {
 				printf("Incorrect apartment number\nEnter correct apartment number: ");
 				*apartment = 0;
 				while ((ch = getchar()) != '\n' && ch != EOF) {}
@@ -434,7 +435,7 @@ int GetInfoAddress(Array *city, Array *street, Array *building, Array *index, in
 		if (index->length != 6 || !IsAllDigits(index->value)) {
 			index->value[0] = '\0';
 			index->length = 0;
-			printf("Incorrect index\nEnter correct index: ");
+			printf("Incorrect index\nEnter correct index (6 digits): ");
 			continue;
 		}
 		break;
@@ -524,7 +525,7 @@ int GetInfoMail(Post *post) {
 			continue;
 		}
 		while ((ch = getchar()) != '\n' && ch != EOF) {
-			if (ch != ' ' && ch != '\t') {
+			if (ch != ' ' && ch != '\t' && ch != '\r') {
 				printf("Incorrect weight\nEnter correct weight: ");
 				weight = -1;
 				while ((ch = getchar()) != '\n' && ch != EOF) {}
@@ -550,14 +551,14 @@ int GetInfoMail(Post *post) {
 		if (id.length != 14 || !IsAllDigits(id.value)) {
 			id.value[0] = '\0';
 			id.length = 0;
-			printf("Incorrect ID\nEnter correct ID: ");
+			printf("Incorrect ID\nEnter correct ID (14 digits): ");
 			continue;
 		}
 		for (int i = 0; i < post->length; i++) {
 			if (MyStrcmp(post->mails[i].identifier.data, id.value) == 0) {
 				id.value[0] = '\0';
 				id.length = 0;
-				printf("Incorrect ID\nEnter correct ID: ");
+				printf("Incorrect ID\nEnter correct ID (14 digits): ");
 				i = post->length;
 			}
 		}
@@ -573,15 +574,15 @@ int GetInfoMail(Post *post) {
 		ungetc(ch, stdin);
 		if (scanf(" %10s %8s", creation_date, creation_time) != 2 || MyStrlen(creation_date) != 10 ||
 			MyStrlen(creation_time) != 8 || !IsCorrectDate(creation_date) || !IsCorrectTime(creation_time)) {
-			printf("Incorrect time\nEnter correct time: ");
+			printf("Incorrect time\nEnter correct time (dd:mm:yyyy hh:mm:ss): ");
 			creation_date[0] = '\0';
 			creation_time[0] = '\0';
 			while ((ch = getchar()) != '\n' && ch != EOF) {}
 			continue;
 		}
 		while ((ch = getchar()) != '\n' && ch != EOF) {
-			if (ch != ' ' && ch != '\t') {
-				printf("Incorrect time\nEnter correct time: ");
+			if (ch != ' ' && ch != '\t' && ch != '\r') {
+				printf("Incorrect time\nEnter correct time (dd:mm:yyyy hh:mm:ss): ");
 				creation_date[0] = '\0';
 				creation_time[0] = '\0';
 				while ((ch = getchar()) != '\n' && ch != EOF) {}
@@ -602,15 +603,15 @@ int GetInfoMail(Post *post) {
 		ungetc(ch, stdin);
 		if (scanf(" %10s %8s", delivery_date, delivery_time) != 2 || MyStrlen(delivery_date) != 10 ||
 			MyStrlen(delivery_time) != 8 || !IsCorrectDate(delivery_date) || !IsCorrectTime(delivery_time)) {
-			printf("Incorrect time\nEnter correct time: ");
+			printf("Incorrect time\nEnter correct time (dd:mm:yyyy hh:mm:ss): ");
 			delivery_date[0] = '\0';
 			delivery_time[0] = '\0';
 			while ((ch = getchar()) != '\n' && ch != EOF) {}
 			continue;
 		}
 		while ((ch = getchar()) != '\n' && ch != EOF) {
-			if (ch != ' ' && ch != '\t') {
-				printf("Incorrect time\nEnter correct time: ");
+			if (ch != ' ' && ch != '\t' && ch != '\r') {
+				printf("Incorrect time\nEnter correct time (dd:mm:yyyy hh:mm:ss): ");
 				delivery_date[0] = '\0';
 				delivery_time[0] = '\0';
 				while ((ch = getchar()) != '\n' && ch != EOF) {}
@@ -635,19 +636,18 @@ int GetInfoMail(Post *post) {
 	full_delivery_time[19] = '\0';
 
 	Mail mail;
-	int err = CreateMail(&mail, *addr, weight, id.value, full_creation_time, full_delivery_time);
+	error = CreateMail(&mail, *addr, weight, id.value, full_creation_time, full_delivery_time);
 
 	ClearAddress(addr);
 	free(addr);
 	ClearArray(&id);
 
-	if (err) return err;
+	if (error) return error;
 
 
-	err = AddLetterToPost(post, mail);
+	error = AddLetterToPost(post, mail);
 	ClearMail(&mail);
-	if (err) return err;
-
+	if (error) return error;
 
 	printf("Mail added successfully!\n\n");
 
@@ -659,6 +659,7 @@ int main() {
 	int error = GetInfoPost(&post);
 	if (error) {
 		ClearPost(&post);
+		printf("Memory allocation error\n");
 		return 1;
 	}
 
@@ -669,12 +670,14 @@ int main() {
 	Array comm;
 	if (CreateArray(&comm, 10)) {
 		ClearPost(&post);
+		printf("Memory allocation error\n");
 		return 1;
 	}
 	while (1) {
 		if (GetInfo(&comm)) {
 			ClearPost(&post);
 			ClearArray(&comm);
+			printf("Memory allocation error\n");
 			return 1;
 		}
 		if (!(comm.value[0] == '1' || comm.value[0] == '2' || comm.value[0] == '3' || comm.value[0] == '4' ||
@@ -692,9 +695,14 @@ int main() {
 			if (error) {
 				ClearPost(&post);
 				ClearArray(&comm);
+				if (error == 1) {
+					printf("Memory allocation error\n");
+				} else {
+					printf("Incorrect input data\n");
+				}
 				return error;
 			}
-			qsort(post.mails, post.length, sizeof(Mail), compare_mails);
+			qsort(post.mails, post.length, sizeof(Mail), CompareMailsByIdentifier);
 			ResetArray(&comm);
 			break;
 			case '2':
@@ -703,18 +711,20 @@ int main() {
 			if (CreateArray(&id, 10)) {
 				ClearPost(&post);
 				ClearArray(&comm);
+				printf("Memory allocation error\n");
 				return 1;
 			}
 			while (1) {
 				if (GetInfo(&id)) {
 					ClearPost(&post);
 					ClearArray(&comm);
+					printf("Memory allocation error\n");
 					return 1;
 				}
 				if (id.length != 14 || !IsAllDigits(id.value)) {
 					id.value[0] = '\0';
 					id.length = 0;
-					printf("Incorrect ID\nEnter correct ID: ");
+					printf("Incorrect ID\nEnter correct ID (14 digits): ");
 					continue;
 				}
 				break;
@@ -725,6 +735,7 @@ int main() {
 			if (error) {
 				ClearPost(&post);
 				ClearArray(&comm);
+				printf("Memory allocation error\n");
 				return 1;
 			}
 			if (DeleteMailFromPost(&post, mail_id)) {
@@ -740,18 +751,20 @@ int main() {
 			if (CreateArray(&id, 10)) {
 				ClearPost(&post);
 				ClearArray(&comm);
+				printf("Memory allocation error\n");
 				return 1;
 			}
 			while (1) {
 				if (GetInfo(&id)) {
 					ClearPost(&post);
 					ClearArray(&comm);
+					printf("Memory allocation error\n");
 					return 1;
 				}
 				if (id.length != 14 || !IsAllDigits(id.value)) {
 					id.value[0] = '\0';
 					id.length = 0;
-					printf("Incorrect ID\nEnter correct ID: ");
+					printf("Incorrect ID\nEnter correct ID (14 digits): ");
 					continue;
 				}
 				break;
@@ -761,6 +774,7 @@ int main() {
 			if (error) {
 				ClearPost(&post);
 				ClearArray(&comm);
+				printf("Memory allocation error\n");
 				return 1;
 			}
 			Mail *mail;
@@ -768,7 +782,7 @@ int main() {
 			if (SearchForMailByIdentifier(&post, mail_id, &mail, &index)) {
 				printf("Couldn't find any mail with this ID\n\n");
 			} else {
-				print_mail(*mail);
+				PrintMail(*mail);
 			}
 			ClearString(&mail_id);
 			ResetArray(&comm);
@@ -778,7 +792,7 @@ int main() {
 			index = 0;
 			SearchForMailsInTime(&post, found, &index);
 			for (int i = 0; i < index; ++i) {
-				print_mail(found[i]);
+				PrintMail(found[i]);
 			}
 			if (index == 0) {
 				printf("Couldn't find any mail delivered in time\n\n");
@@ -791,7 +805,7 @@ int main() {
 			index = 0;
 			SearchForMailsExpired(&post, found, &index);
 			for (int i = 0; i < index; ++i) {
-				print_mail(found[i]);
+				PrintMail(found[i]);
 			}
 			if (index == 0) {
 				printf("Couldn't find any expired mail\n\n");

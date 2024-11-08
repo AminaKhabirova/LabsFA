@@ -1,6 +1,8 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <stdlib.h>
+
 typedef struct String {
 	char* data;
 	int length;
@@ -14,6 +16,6 @@ int StringEquality(const String* str1, const String* str2);
 int StringComparison(const String* str1, const String* str2);
 int CopyStringToExisting(String* dest, const String* src);
 int CopyStringToNew(String *dest, const String *src);
-void StringСoncatenation(String* str1, const String* str2);
+int StringСoncatenation(String* str1, const String* str2);
 
 #endif //STRING_H
