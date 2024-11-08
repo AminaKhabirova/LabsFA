@@ -37,3 +37,8 @@ int AddToArray(Array* arr, char symbol) {
 	arr->value[arr->length] = '\0';
 	return 0;
 }
+
+void ResetArray(Array* arr) {
+	arr->value[0] = '\0';
+	arr->length = 0;
+}

@@ -59,13 +59,11 @@ void Concatenation(char *dest, const char *src) {
 	while (*dest) {
 		dest++;
 	}
-
 	while (*src) {
 		*dest = *src;
 		dest++;
 		src++;
 	}
-
 	*dest = '\0';
 }
 
@@ -101,7 +99,7 @@ int TimeParser(const String *str, Time *time) {
 	return 0;
 }
 
-int compare_time(const void *a, const void *b) {
+int CompareTime(const void *a, const void *b) {
 	Time t1 = *((Time *)a);
 	Time t2 = *((Time *)b);
 
@@ -113,90 +111,16 @@ int compare_time(const void *a, const void *b) {
 	return t1.second - t2.second;
 }
 
-int compare_time_str(const void *a, const void *b) {
-	String *time1 = (String *) a;
-	String *time2 = (String *) b;
-
-	Time t1, t2;
-	if (TimeParser(time1, &t1) || TimeParser(time2, &t2)) {
-		return 2;
-	}
-
-	return compare_time(&t1, &t2);
-}
-
-int compare_creation_date(const void *a, const void *b) {
+int CompareCreationTime(const void *a, const void *b) {
 	Mail *m1 = (Mail *)a;
 	Mail *m2 = (Mail *)b;
 
-	return compare_time_str(&m1->creation_time, &m2->creation_time);
-}
-
-int search_mail_in_time(Post *post, Mail *found, int *index) {
-	if (found == NULL) return 1;
-	time_t cur_time;
-	time(&cur_time);
-	struct tm *time_info = localtime(&cur_time);
-
-	Time time1 = {time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900,
-		time_info->tm_hour, time_info->tm_min, time_info->tm_sec};
-
-	for (int i = 0; i < post->length; ++i) {
-		Time temp;
-		if (TimeParser(&post->mails[i].delivery_time, &temp))
-			continue;
-
-		if (compare_time(&temp, &time1) > 0)
-			found[(*index)++] = post->mails[i];
-
+	Time t1, t2;
+	if (TimeParser(&m1->creation_time, &t1) || TimeParser(&m2->creation_time, &t2)) {
+		return 2;
 	}
 
-	qsort(found, *index, sizeof(Mail), compare_creation_date);
-
-	return 0;
-}
-
-int search_mail_delayed(Post *post, Mail *found, int *index) {
-	time_t cur_time;
-	time(&cur_time);
-	struct tm *time_info = localtime(&cur_time);
-
-	Time time1 = {time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900, time_info->tm_hour,
-				  time_info->tm_min, time_info->tm_sec};
-
-	for (int i = 0; i < post->length; ++i) {
-		Time temp;
-		if (TimeParser(&post->mails[i].delivery_time, &temp))
-			continue;
-
-		if (compare_time(&temp, &time1) <= 0)
-			found[(*index)++] = post->mails[i];
-
-	}
-
-	qsort(found, *index, sizeof(Mail), compare_creation_date);
-
-	return 0;
-}
-
-void print_mail(Mail mail) {
-	printf("Mail:\n\tWeight: %f\n\tID: %s\n\tCreation date: %s\n\tDelivery date: %s\n\t", mail.weight,
-		mail.identifier.data, mail.creation_time.data, mail.delivery_time.data);
-	printf("Address:\n\tPost Index: %s\n\tCity: %s\n\tStreet: %s\n\tBuilding: %s\n\tHouse: %u\n\tApartment: %u\n",
-		mail.address.index.data, mail.address.city.data, mail.address.street.data, mail.address.building.data,
-		mail.address.house, mail.address.apartment);
-}
-
-int compare_mails(const void *a, const void *b) {
-	Mail *mail1 = (Mail *) a;
-	Mail *mail2 = (Mail *) b;
-
-	String index1 = mail1->address.index;
-	String index2 = mail2->address.index;
-	if (!StringEquality(&index1, &index2))
-		return StringComparison(&index1, &index2);
-
-	return StringComparison(&mail1->identifier, &mail2->identifier);
+	return CompareTime(&t1, &t2);
 }
 
 int CreateAddress(Address *addr, char* city, char* street, unsigned int house, char* building, unsigned int apartment,
@@ -324,6 +248,73 @@ int DeleteMailFromPost(Post *post, String mail_id) {
 	post->length--;
 
 	return 0;
+}
+
+int SearchForMailsInTime(Post *post, Mail *found, int *index) {
+	if (found == NULL) return 1;
+	time_t cur_time;
+	time(&cur_time);
+	struct tm *time_info = localtime(&cur_time);
+
+	Time time1 = {time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900,
+		time_info->tm_hour, time_info->tm_min, time_info->tm_sec};
+
+	for (int i = 0; i < post->length; ++i) {
+		Time temp;
+		if (TimeParser(&post->mails[i].delivery_time, &temp))
+			continue;
+
+		if (CompareTime(&temp, &time1) > 0)
+			found[(*index)++] = post->mails[i];
+
+	}
+
+	qsort(found, *index, sizeof(Mail), CompareCreationTime);
+
+	return 0;
+}
+
+int SearchForMailsExpired(Post *post, Mail *found, int *index) {
+	time_t cur_time;
+	time(&cur_time);
+	struct tm *time_info = localtime(&cur_time);
+
+	Time time1 = {time_info->tm_mday, time_info->tm_mon + 1, time_info->tm_year + 1900,
+		time_info->tm_hour, time_info->tm_min, time_info->tm_sec};
+
+	for (int i = 0; i < post->length; ++i) {
+		Time temp;
+		if (TimeParser(&post->mails[i].delivery_time, &temp))
+			continue;
+
+		if (CompareTime(&temp, &time1) <= 0)
+			found[(*index)++] = post->mails[i];
+
+	}
+
+	qsort(found, *index, sizeof(Mail), CompareCreationTime);
+
+	return 0;
+}
+
+void print_mail(Mail mail) {
+	printf("Mail:\n\tWeight: %f\n\tID: %s\n\tCreation date: %s\n\tDelivery date: %s\n\t", mail.weight,
+		mail.identifier.data, mail.creation_time.data, mail.delivery_time.data);
+	printf("Address:\n\tPost Index: %s\n\tCity: %s\n\tStreet: %s\n\tBuilding: %s\n\tHouse: %u\n\tApartment: %u\n",
+		mail.address.index.data, mail.address.city.data, mail.address.street.data, mail.address.building.data,
+		mail.address.house, mail.address.apartment);
+}
+
+int compare_mails(const void *a, const void *b) {
+	Mail *mail1 = (Mail *) a;
+	Mail *mail2 = (Mail *) b;
+
+	String index1 = mail1->address.index;
+	String index2 = mail2->address.index;
+	if (!StringEquality(&index1, &index2))
+		return StringComparison(&index1, &index2);
+
+	return StringComparison(&mail1->identifier, &mail2->identifier);
 }
 
 void ClearPost(Post *post) {
@@ -674,121 +665,150 @@ int main() {
 	printf("Available commands:\n1. Add mail\n2. Delete mail by ID\n3. Get information about mail by ID\n"
 		"4. Search for mails delivered in time\n5. Search for mails that have expired\n6. Exit the program\n"
 		"Enter the number of command: ");
-	char command[2];
 
+	Array comm;
+	if (CreateArray(&comm, 10)) {
+		ClearPost(&post);
+		return 1;
+	}
 	while (1) {
-		scanf(" %s", command);
-		if ((command[0] == '1' || command[0] == '2' || command[0] == '3' || command[0] == '4' || command[0] == '5' ||
-			command[0] == '6') && !command[1]) {
-			switch (command[0]) {
-				case '1':
-					error = GetInfoMail(&post);
-				if (error) {
-					ClearPost(&post);
-					return error;
-				}
-				qsort(post.mails, post.length, sizeof(Mail), compare_mails);
-				break;
-				case '2':
-					printf("ID (14 digits): ");
-				Array id;
-				if (CreateArray(&id, 10)) {
-					ClearPost(&post);
-					return 1;
-				}
-				while (1) {
-					if (GetInfo(&id)) {
-						ClearPost(&post);
-						return 1;
-					}
-					if (id.length != 14 || !IsAllDigits(id.value)) {
-						id.value[0] = '\0';
-						id.length = 0;
-						printf("Incorrect ID\nEnter correct ID: ");
-						continue;
-					}
-					break;
-				}
-				String mail_id;
-				error = CreateString(&mail_id, id.value);
-				ClearArray(&id);
-				if (error) {
-					ClearPost(&post);
-					return 1;
-				}
-				if (DeleteMailFromPost(&post, mail_id)) {
-					printf("Couldn't find any mail with this ID to delete\n\n");
-				} else {
-					printf("Successfully deleted mail with ID: %s\n\n", mail_id.data);
-				}
-				ClearString(&mail_id);
-				break;
-				case '3':
-					printf("ID (14 digits): ");
-				if (CreateArray(&id, 10)) {
-					ClearPost(&post);
-					return 1;
-				}
-				while (1) {
-					if (GetInfo(&id)) {
-						ClearPost(&post);
-						return 1;
-					}
-					if (id.length != 14 || !IsAllDigits(id.value)) {
-						id.value[0] = '\0';
-						id.length = 0;
-						printf("Incorrect ID\nEnter correct ID: ");
-						continue;
-					}
-					break;
-				}
-				error = CreateString(&mail_id, id.value);
-				ClearArray(&id);
-				if (error) {
-					ClearPost(&post);
-					return 1;
-				}
-				Mail *mail;
-				int index = 0;
-				if (SearchForMailByIdentifier(&post, mail_id, &mail, &index)) {
-					printf("Couldn't find any mail with this ID\n\n");
-				} else {
-					print_mail(*mail);
-				}
-				ClearString(&mail_id);
-				break;
-				case '4':
-					Mail *found = (Mail *)malloc(sizeof(Mail) * post.length);
-				index = 0;
-				search_mail_in_time(&post, found, &index);
-				for (int i = 0; i < index; ++i) {
-					print_mail(found[i]);
-				}
-				free(found);
-				break;
-				case '5':
-					found = (Mail *)malloc(sizeof(Mail) * post.length);
-				index = 0;
-				search_mail_delayed(&post, found, &index);
-				for (int i = 0; i < index; ++i) {
-					print_mail(found[i]);
-				}
-				free(found);
-				break;
-				case '6':
-					printf("Exiting the program\n");
-				ClearPost(&post);
-				return 0;
-				default:
-					break;
-			}
-			printf("Available commands:\n1. Add mail\n2. Delete mail by ID\n3. Get information about mail by ID\n"
-				"4. Search for mails delivered in time\n5. Search for mails that have expired\n6. Exit the program\n"
-				"Enter the number of command: ");
-		} else {
-			printf("Incorrect command\nAvailable commands:\n1. Add mail\n2. Delete mail by ID\n"
+		if (GetInfo(&comm)) {
+			ClearPost(&post);
+			ClearArray(&comm);
+			return 1;
+		}
+		if (!(comm.value[0] == '1' || comm.value[0] == '2' || comm.value[0] == '3' || comm.value[0] == '4' ||
+			comm.value[0] == '5' || comm.value[0] == '6') || comm.value[1] != '\0') {
+			comm.value[0] = '\0';
+			comm.length = 0;
+			printf("Incorrect command\n\nAvailable commands:\n1. Add mail\n2. Delete mail by ID\n"
 				"3. Get information about mail by ID\n4. Search for mails delivered in time\n"
 				"5. Search for mails that have expired\n6. Exit the program\nEnter the number of command: ");
+			continue;
 		}
+		switch (comm.value[0]) {
+			case '1':
+				error = GetInfoMail(&post);
+			if (error) {
+				ClearPost(&post);
+				ClearArray(&comm);
+				return error;
+			}
+			qsort(post.mails, post.length, sizeof(Mail), compare_mails);
+			ResetArray(&comm);
+			break;
+			case '2':
+				printf("ID (14 digits): ");
+			Array id;
+			if (CreateArray(&id, 10)) {
+				ClearPost(&post);
+				ClearArray(&comm);
+				return 1;
+			}
+			while (1) {
+				if (GetInfo(&id)) {
+					ClearPost(&post);
+					ClearArray(&comm);
+					return 1;
+				}
+				if (id.length != 14 || !IsAllDigits(id.value)) {
+					id.value[0] = '\0';
+					id.length = 0;
+					printf("Incorrect ID\nEnter correct ID: ");
+					continue;
+				}
+				break;
+			}
+			String mail_id;
+			error = CreateString(&mail_id, id.value);
+			ClearArray(&id);
+			if (error) {
+				ClearPost(&post);
+				ClearArray(&comm);
+				return 1;
+			}
+			if (DeleteMailFromPost(&post, mail_id)) {
+				printf("Couldn't find any mail with this ID to delete\n\n");
+			} else {
+				printf("Successfully deleted mail with ID: %s\n\n", mail_id.data);
+			}
+			ClearString(&mail_id);
+			ResetArray(&comm);
+			break;
+			case '3':
+				printf("ID (14 digits): ");
+			if (CreateArray(&id, 10)) {
+				ClearPost(&post);
+				ClearArray(&comm);
+				return 1;
+			}
+			while (1) {
+				if (GetInfo(&id)) {
+					ClearPost(&post);
+					ClearArray(&comm);
+					return 1;
+				}
+				if (id.length != 14 || !IsAllDigits(id.value)) {
+					id.value[0] = '\0';
+					id.length = 0;
+					printf("Incorrect ID\nEnter correct ID: ");
+					continue;
+				}
+				break;
+			}
+			error = CreateString(&mail_id, id.value);
+			ClearArray(&id);
+			if (error) {
+				ClearPost(&post);
+				ClearArray(&comm);
+				return 1;
+			}
+			Mail *mail;
+			int index = 0;
+			if (SearchForMailByIdentifier(&post, mail_id, &mail, &index)) {
+				printf("Couldn't find any mail with this ID\n\n");
+			} else {
+				print_mail(*mail);
+			}
+			ClearString(&mail_id);
+			ResetArray(&comm);
+			break;
+			case '4':
+				Mail *found = (Mail *)malloc(sizeof(Mail) * post.length);
+			index = 0;
+			SearchForMailsInTime(&post, found, &index);
+			for (int i = 0; i < index; ++i) {
+				print_mail(found[i]);
+			}
+			if (index == 0) {
+				printf("Couldn't find any mail delivered in time\n\n");
+			}
+			free(found);
+			ResetArray(&comm);
+			break;
+			case '5':
+				found = (Mail *)malloc(sizeof(Mail) * post.length);
+			index = 0;
+			SearchForMailsExpired(&post, found, &index);
+			for (int i = 0; i < index; ++i) {
+				print_mail(found[i]);
+			}
+			if (index == 0) {
+				printf("Couldn't find any expired mail\n\n");
+			}
+			free(found);
+			ResetArray(&comm);
+			break;
+			case '6':
+				printf("Exiting the program\n");
+			ClearPost(&post);
+			ClearArray(&comm);
+			return 0;
+			default:
+				break;
+		}
+		printf("Available commands:\n1. Add mail\n2. Delete mail by ID\n3. Get information about mail by ID\n"
+				"4. Search for mails delivered in time\n5. Search for mails that have expired\n6. Exit the program\n"
+				"Enter the number of command: ");
 	}
 }

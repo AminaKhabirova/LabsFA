@@ -11,5 +11,6 @@ int CreateArray(Array* arr, unsigned int length);
 void ClearArray(Array* arr);
 int ResizeArray(Array* arr, unsigned int size_delta);
 int AddToArray(Array* arr, char symbol);
+void ResetArray(Array* arr);
 
 #endif //ARRAY_H
