@@ -61,6 +61,7 @@ void ParseExpression(FILE *input, FILE *output, int level) {
         	if (after_bracket) {
         		fprintf(output, "\n");
         		PrintIndent(output, level);
+        		after_bracket = 0;
         	}
             fprintf(output, "%c", ch);
         }
